@@ -1,0 +1,14 @@
+ if (filteredData.length === 0) {
+            console.log("No matching documents");
+        } else {
+            let array = []
+            filteredData.forEach((doc) => {
+                array.push({
+                    id: doc.id, 
+                    ...doc 
+                })
+            })
+            //    const formattedData = filteredData.map(item => ({ id: item.id, ...item }));
+            //   console.log(formattedData);
+
+        }
