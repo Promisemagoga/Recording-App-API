@@ -25,7 +25,6 @@ function Recordings() {
     const getAudios = async () => {
         const response = await fetch(`https://firestore.googleapis.com/v1/projects/journal-app-69873/databases/(default)/documents/recordInfo/`)
         const data = await response.json()
-        console.log(data);
         const filteredData = data.documents.filter(doc => doc.fields.userData.stringValue === auth.currentUser.email);
         setSavedRecordings(filteredData);
         console.log(filteredData);
@@ -94,139 +93,125 @@ function Recordings() {
         setUpdatedData(data);
     };
 
-
+//  ...updatedData
     const updateFunc = async () => {
-        const documentId = updatedData.id
+        try {
 
-        const stringId = documentId.split('/');
-        const docId = stringId[stringId.length - 1]
-        console.log(docId);
+            const documentId = updatedData.name
+
+            const stringId = documentId.split('/');
+            const docId = stringId[stringId.length - 1]
+            console.log(docId);
 
 
-        const data = {
-            date: updatedData.date,
-            recordingUrl: updatedData.recordingUrl,
-            fileName: updatedData.fileName,
-            recName: heading,
-            duration: updatedData.duration
+            const data = {
+                fields: {
+                    recName: {
+                        stringValue: heading
+                    },
+                }
+            }
+            const response = await fetch(`https://firestore.googleapis.com/v1/projects/journal-app-69873/databases/(default)/documents/recordInfo/${docId}?updateMask.fieldPaths=recName`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                console.log('Record updated successfully');
+                setIsModalVisible(false)
+            } else {
+                console.log('Failed to update record');
+            }
+        } catch (error) {
+            console.error('Error occurred:', error);
         }
 
-       await fetch(`https://firestore.googleapis.com/v1/projects/journal-app-69873/databases/(default)/documents/recordInfo/${docId}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then(() => {
-                if (!response.ok) {
-                    throw new Error("Request failed");
-                }
-            }).catch((error) => {
-                console.log(error);
-            })
-            return
 
     };
-    // const docId = updatedData.id;
-
-    // const data = {
-    //     date: updatedData.date,
-    //     recordingUrl: updatedData.recordingUrl,
-    //     fileName: updatedData.fileName,
-    //     recName: heading,
-    //     duration: updatedData.duration
-    // }
-
-    // const docRef = doc(db, 'recordInfo', docId);
-    // await updateDoc(docRef, data)
-    //     .then(() => {
-    //         console.log("Data successfully Updated");
-    //         setIsModalVisible(false)
-    //     })
-    //     .catch((error) => {
-    //         console.log("Error updating data:", error);
-    //     })
 
 
-    function logoutFunc() {
-        auth.signOut()
-        console.log("Successfully signed out");
-        navigation.navigate("Login")
 
-    }
+function logoutFunc() {
+    auth.signOut()
+    console.log("Successfully signed out");
+    navigation.navigate("Login")
+
+}
 
 
-    function handleChange(text) {
-        setHeading(text)
-    }
+function handleChange(text) {
+    setHeading(text)
+}
 
-    // if(!savedRecording) return <View></View>
+// if(!savedRecording) return <View></View>
 
-    return (
-        <SafeAreaView style={styles.main}>
-            <Text style={styles.heading}>My Journal</Text>
-            <ScrollView style={styles.scroll}>
-                <View style={styles.scrollCon}>
-                    {savedRecording ? (
-                        savedRecording.map((data, index) => (
-                            <View style={[styles.card, styles.elevation]} key={index}>
-                                <View style={styles.cardHeader}>
-                                    <Text style={styles.textColor}>{data.fields.recName.stringValue}</Text>
-                                    <Text style={styles.textColor}>{data.fields.date.stringValue}</Text>
+return (
+    <SafeAreaView style={styles.main}>
+        <Text style={styles.heading}>My Journal</Text>
+        <ScrollView style={styles.scroll}>
+            <View style={styles.scrollCon}>
+                {savedRecording ? (
+                    savedRecording.map((data, index) => (
+                        <View style={[styles.card, styles.elevation]} key={index}>
+                            <View style={styles.cardHeader}>
+                                <Text style={styles.textColor}>{data.fields.recName.stringValue}</Text>
+                                <Text style={styles.textColor}>{data.fields.date.stringValue}</Text>
+                            </View>
+                            <View style={styles.cardBottom}>
+
+                                <View>
+                                    <Text style={styles.talkingText}>Your talking time</Text>
+                                    <Text>{data.fields.duration.stringValue}</Text>
                                 </View>
-                                <View style={styles.cardBottom}>
-
-                                    <View>
-                                        <Text style={styles.talkingText}>Your talking time</Text>
-                                        <Text>{data.fields.duration.stringValue}</Text>
-                                    </View>
-                                    <View style={styles.buttons}>
-                                        <Pressable onPress={() => playSound(data.fields.recordingUrl.stringValue)} style={styles.play}>
-                                            <Text style={styles.textColor}>{isPlaying ? 'Pause' : 'Play'}</Text>
+                                <View style={styles.buttons}>
+                                    <Pressable onPress={() => playSound(data.fields.recordingUrl.stringValue)} style={styles.play}>
+                                        <Text style={styles.textColor}>{isPlaying ? 'Pause' : 'Play'}</Text>
+                                    </Pressable>
+                                    <View style={styles.crudBtn}>
+                                        <Pressable style={styles.crudButton} onPress={() => deleteFunc(data.name)}>
+                                            <Text style={styles.crudText}>Delete</Text>
                                         </Pressable>
-                                        <View style={styles.crudBtn}>
-                                            <Pressable style={styles.crudButton} onPress={() => deleteFunc(data.name)}>
-                                                <Text style={styles.crudText}>Delete</Text>
-                                            </Pressable>
-                                            <Pressable style={styles.crudButton} onPress={() => toggleModal(data)} >
-                                                <Text style={styles.crudText} >Update</Text>
-                                            </Pressable>
-                                        </View>
+                                        <Pressable style={styles.crudButton} onPress={() => toggleModal(data)} >
+                                            <Text style={styles.crudText} >Update</Text>
+                                        </Pressable>
                                     </View>
                                 </View>
                             </View>
-                        ))
-                    ) : (
-                        <Text>No recordings found.</Text>
-                    )}
-                </View>
-                <Modal visible={isModalVisible} >
-                    <View style={styles.modal} >
-                        <TextInput
-                            placeholder="Enter heading..."
-                            onChangeText={(text) => handleChange(text)}
-                            style={styles.recordingHeading}
-                        />
-                        <Pressable onPress={updateFunc} style={styles.updatebtn}>
-                            <Text style={styles.textColor}>Save Changes</Text>
-                        </Pressable>
-                    </View>
-                </Modal>
-            </ScrollView>
-            <View style={styles.bottomNav}>
-                <Pressable onPress={() => navigation.navigate('Recordings')}>
-                    <Image source={require('../assets/waveSound.png')} style={styles.img} />
-                </Pressable>
-                <Pressable onPress={() => navigation.navigate('Home')}>
-                    <Image source={require('../assets/microphone.png')} style={styles.img} />
-                </Pressable>
-                <Pressable onPress={logoutFunc}>
-                    <Image source={require('../assets/logout.png')} style={styles.img} />
-                </Pressable>
+                        </View>
+                    ))
+                ) : (
+                    <Text>No recordings found.</Text>
+                )}
             </View>
-        </SafeAreaView>
-    )
+            <Modal visible={isModalVisible} >
+                <View style={styles.modal} >
+                    <TextInput
+                        placeholder="Enter heading..."
+                        onChangeText={(text) => handleChange(text)}
+                        style={styles.recordingHeading}
+                    />
+                    <Pressable onPress={updateFunc} style={styles.updatebtn}>
+                        <Text style={styles.textColor}>Save Changes</Text>
+                    </Pressable>
+                </View>
+            </Modal>
+        </ScrollView>
+        <View style={styles.bottomNav}>
+            <Pressable onPress={() => navigation.navigate('Recordings')}>
+                <Image source={require('../assets/waveSound.png')} style={styles.img} />
+            </Pressable>
+            <Pressable onPress={() => navigation.navigate('Home')}>
+                <Image source={require('../assets/microphone.png')} style={styles.img} />
+            </Pressable>
+            <Pressable onPress={logoutFunc}>
+                <Image source={require('../assets/logout.png')} style={styles.img} />
+            </Pressable>
+        </View>
+    </SafeAreaView>
+)
 }
 
 const styles = StyleSheet.create({
